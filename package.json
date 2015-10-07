@@ -1,0 +1,26 @@
+{
+  "name": "gcloud-mbed-connector",
+  "version": "0.0.1",
+  "description": "Interface to http://connector.mbed.org/ host on App Engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rosterloh/gcloud-mbed-connector.git"
+  },
+  "author": "Richard Osterloh <richard.osterloh@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rosterloh/gcloud-mbed-connector/issues"
+  },
+  "homepage": "https://github.com/rosterloh/gcloud-mbed-connector#readme",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "morgan": "^1.6.1",
+    "request": "^2.64.0",
+    "url-join": "0.0.1"
+  }
+}
