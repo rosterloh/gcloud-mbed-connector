@@ -1,10 +1,15 @@
+'use strict';
+
 var express = require('express');
-var logger = require('morgan');
+var config = require('./config');
+var logging = require('./lib/logging')();
 var bodyParser = require('body-parser');
 
 var routes = require('./lib/routes');
 
 var app = express();
+var http = require('http').Server(app);
+var urljoin = require('url-join');
 
 var MbedConnector = require('./lib/mbed-connector');
 var EndpointController = require('./lib/endpoint');
@@ -14,14 +19,17 @@ var mds_credentials = {
   password: 'sparky'
 };
 */
+
+var mds_domain = 'rosterloh84';
 var mds_credentials = {
+  domain: mds_domain,
   token: 'NNIQ2SYSK0CKRTLLIQBB7JPD39LHY9L9PN363GBX'
 };
 
-var app_url = 'http://iot-hack-mds.cloudapp.net:3000';
+var app_url = 'http://home-cloud-server.appspot.com:3000';
 
-var mds_host = 'http://iot-hack-mds.cloudapp.net:8080';
-var mds_domain = 'rosterloh84';
+var mds_host = 'http://home-cloud-server.appspot.com:8080';
+
 var app_port = process.env.PORT || 3000;
 
 http.listen(app_port, function(){
@@ -33,44 +41,44 @@ var endpointController = new EndpointController(mbedConnector, mds_domain);
 
 app.set('endpointController', endpointController);
 
-app.use(logger('dev'));
+// Add the request logger before anything else so that it can
+// accurately log requests.
+app.use(logging.requestLogger);
+
+// OAuth2
+var oauth2 = require('./lib/oauth2')(config.oauth2);
+app.use(oauth2.router);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
 app.use('/', routes);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-    var err = new Error('Not Found');
-    err.status = 404;
-    next(err);
+// Our application will need to respond to health checks when running on
+// Compute Engine with Managed Instance Groups.
+app.get('/_ah/health', function(req, res) {
+  res.status(200).send('ok');
 });
 
-// error handlers
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
-        res.status(err.status || 500);
-        res.render('error', {
-            message: err.message,
-            error: err
-        });
-    });
-}
+// Add the error logger after all middleware and routes so that
+// it can log errors from the whole application. Any custom error
+// handlers should go after this.
+app.use(logging.errorLogger);
 
-// production error handler
-// no stacktraces leaked to user
+// Basic error handler.
 app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
-    });
+  res.status(500).send('Something broke!');
 });
 
+// Start the server
+var server = app.listen(config.port, function () {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log('App listening at http://%s:%s', host, port);
+});
 
 function createWebhook() {
   var url = urljoin(app_url, 'webhook');
@@ -91,7 +99,7 @@ function registerPreSubscription() {
     }
   ];
 
-  mbedConnector.registerPreSubscription(mds_domain, preSubscriptionData, function(error, response, body) {
+  mbedConnector.registerPreSubscription(preSubscriptionData, function(error, response, body) {
     if (error || (response && response.statusCode >= 400)) {
       console.error('Pre-subscription registration failed.');
     } else {
