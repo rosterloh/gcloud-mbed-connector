@@ -11,23 +11,16 @@ var app = express();
 var http = require('http').Server(app);
 var urljoin = require('url-join');
 
-var MbedConnector = require('./lib/mbed-connector');
+var MbedConnector = require('mbed-connector');
 var EndpointController = require('./lib/endpoint');
-/*
-var mds_credentials = {
-  username: 'rosterloh84',
-  password: 'sparky'
-};
-*/
 
 var mds_domain = 'rosterloh84';
 var mds_credentials = {
   domain: mds_domain,
-  token: 'NNIQ2SYSK0CKRTLLIQBB7JPD39LHY9L9PN363GBX'
+  token: 'G3OXFXTQBVB1OFLD73JZPRLOKIX7A5TUXSZUMT8P'
 };
 
 var app_url = 'http://home-cloud-server.appspot.com:3000';
-
 var mds_host = 'http://home-cloud-server.appspot.com:8080';
 
 var app_port = process.env.PORT || 3000;
