@@ -9,16 +9,13 @@ var routes = require('./lib/routes');
 
 var app = express();
 var http = require('http').Server(app);
-var urljoin = require('url-join');
 
 var MbedConnector = require('mbed-connector');
-var EndpointController = require('./lib/endpoint');
+var mbedConnector = new MbedConnector({
+  accessKey: 'G3OXFXTQBVB1OFLD73JZPRLOKIX7A5TUXSZUMT8P'
+});
 
-var mds_domain = 'rosterloh84';
-var mds_credentials = {
-  domain: mds_domain,
-  token: 'G3OXFXTQBVB1OFLD73JZPRLOKIX7A5TUXSZUMT8P'
-};
+var EndpointController = require('./lib/endpoint');
 
 var app_url = 'http://home-cloud-server.appspot.com:3000';
 var mds_host = 'http://home-cloud-server.appspot.com:8080';
@@ -29,8 +26,7 @@ http.listen(app_port, function(){
   console.log('listening on port', app_port);
 });
 
-var mbedConnector = new MbedConnector(mds_host, mds_credentials);
-var endpointController = new EndpointController(mbedConnector, mds_domain);
+var endpointController = new EndpointController(mbedConnector);
 
 app.set('endpointController', endpointController);
 
@@ -73,34 +69,24 @@ var server = app.listen(config.port, function () {
   console.log('App listening at http://%s:%s', host, port);
 });
 
-function createWebhook() {
-  var url = urljoin(app_url, 'webhook');
-  mbedConnector.createWebhook(mds_domain, url, function(error, response, body) {
-    if (error || (response && response.statusCode >= 400)) {
-      console.error('Webhook registration failed.');
-    } else {
-      registerPreSubscription();
-    }
+// Setup notification channel
+mbedConnector.startLongPolling(function(error) {
+  if (error) throw error;
+  mbedConnector.getEndpoints(function(error, endpoints) {
+    if (error) throw error;
+    endpoints.forEach(function(endpoint) {
+      mbedConnector.getResources(endpoint.name, function(error, resources) {
+        if (error) throw error;
+        resources.forEach(function(resource) {
+          mbedConnector.getResourceValue(endpoint.name, resource.uri, function(error, value) {
+            console.log('Endpoint:', endpoint.name);
+            console.log('Resource:', resource.uri);
+            console.log('Value:', value);
+          });
+        });
+      });
+    });
   });
-}
-
-function registerPreSubscription() {
-  var preSubscriptionData = [
-    {
-      "endpoint-name": "light-and-potentiometer",
-      "resource-path": ["/LightSensor/0/L", "/LED/0/R"]
-    }
-  ];
-
-  mbedConnector.registerPreSubscription(preSubscriptionData, function(error, response, body) {
-    if (error || (response && response.statusCode >= 400)) {
-      console.error('Pre-subscription registration failed.');
-    } else {
-      endpointController.fetchEndpoints();
-    }
-  });
-}
-
-createWebhook();
+});
 
 module.exports = app;
