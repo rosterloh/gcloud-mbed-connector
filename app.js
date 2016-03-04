@@ -10,8 +10,8 @@ var routes = require('./lib/routes');
 var app = express();
 var http = require('http').Server(app);
 
-var MbedConnector = require('mbed-connector');
-var mbedConnector = new MbedConnector({
+var MbedConnectorApi = require('mbed-connector-api');
+var mbedConnectorApi = new MbedConnectorApi({
   accessKey: 'G3OXFXTQBVB1OFLD73JZPRLOKIX7A5TUXSZUMT8P'
 });
 
@@ -26,7 +26,7 @@ http.listen(app_port, function(){
   console.log('listening on port', app_port);
 });
 
-var endpointController = new EndpointController(mbedConnector);
+var endpointController = new EndpointController(mbedConnectorApi);
 
 app.set('endpointController', endpointController);
 
@@ -70,15 +70,15 @@ var server = app.listen(config.port, function () {
 });
 
 // Setup notification channel
-mbedConnector.startLongPolling(function(error) {
+mbedConnectorApi.startLongPolling(function(error) {
   if (error) throw error;
-  mbedConnector.getEndpoints(function(error, endpoints) {
+  mbedConnectorApi.getEndpoints(function(error, endpoints) {
     if (error) throw error;
     endpoints.forEach(function(endpoint) {
-      mbedConnector.getResources(endpoint.name, function(error, resources) {
+      mbedConnectorApi.getResources(endpoint.name, function(error, resources) {
         if (error) throw error;
         resources.forEach(function(resource) {
-          mbedConnector.getResourceValue(endpoint.name, resource.uri, function(error, value) {
+          mbedConnectorApi.getResourceValue(endpoint.name, resource.uri, function(error, value) {
             console.log('Endpoint:', endpoint.name);
             console.log('Resource:', resource.uri);
             console.log('Value:', value);
